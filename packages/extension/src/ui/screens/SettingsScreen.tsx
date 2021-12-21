@@ -5,6 +5,7 @@ import { sendMessage } from "../../shared/messages"
 import { BackButton } from "../components/BackButton"
 import { Button } from "../components/Button"
 import { Header } from "../components/Header"
+import { InputText } from "../components/Input"
 import { H2, P } from "../components/Typography"
 
 const SettingsScreenWrapper = styled.div`
@@ -24,9 +25,16 @@ const SettingsScreenWrapper = styled.div`
 interface SettingsScreenProps {
   onBack: () => void
   onLock: () => void
+  port: number
+  onPortChange: (port: number) => void
 }
 
-export const SettingsScreen: FC<SettingsScreenProps> = ({ onBack, onLock }) => (
+export const SettingsScreen: FC<SettingsScreenProps> = ({
+  onBack,
+  onLock,
+  port,
+  onPortChange,
+}) => (
   <>
     <Header>
       <BackButton onClick={onBack} />
@@ -53,6 +61,13 @@ export const SettingsScreen: FC<SettingsScreenProps> = ({ onBack, onLock }) => (
       >
         Lock wallet
       </Button>
+      <InputText
+        placeholder="Local node port number"
+        type="number"
+        value={port}
+        onChange={(e: any) => onPortChange(e.target.value)}
+        style={{ marginTop: 20 }}
+      />
     </SettingsScreenWrapper>
   </>
 )

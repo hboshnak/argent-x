@@ -22,7 +22,7 @@ import {
   startSession,
   stopSession,
 } from "./session"
-import { Storage, setToStorage } from "./storage"
+import { setToStorage } from "./storage"
 import { addToWhitelist, isOnWhitelist, removeFromWhitelist } from "./whitelist"
 
 let activeTabId: number | undefined

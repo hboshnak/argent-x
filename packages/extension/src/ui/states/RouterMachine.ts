@@ -3,7 +3,11 @@ import { Args, InvokeFunctionTransaction, typedData } from "starknet"
 import { DoneInvokeEvent, assign, createMachine } from "xstate"
 
 import { sendMessage } from "../../shared/messages"
-import { defaultNetworkId } from "../../shared/networks"
+import {
+  defaultNetwork,
+  localNetworkUrl,
+  networkWallets,
+} from "../../shared/networks"
 import {
   getLastSelectedWallet,
   getWallets,
@@ -37,6 +41,7 @@ type RouterEvents =
   | { type: "SUBMIT_KEYSTORE"; data: string }
   | { type: "SELECT_WALLET"; data: string }
   | { type: "CHANGE_NETWORK"; data: string }
+  | { type: "CHANGE_PORT"; data: number }
   | {
       type: "SUBMIT_PASSWORD"
       data: { password: string }
@@ -71,6 +76,7 @@ interface Context {
   isPopup?: boolean
   hostToWhitelist?: string
   error?: string
+  localhostPort: number
 }
 
 interface SigningContext {
@@ -135,7 +141,11 @@ export const routerMachine = createMachine<
   initial: "determineEntry",
   context: {
     wallets: {},
-    networkId: defaultNetworkId,
+    networkId: defaultNetwork.id,
+    localhostPort: (() => {
+      const port = parseInt(localStorage.port)
+      return !port || isNaN(port) ? 5000 : port
+    })(),
   },
   states: {
     determineEntry: {
@@ -247,9 +257,7 @@ export const routerMachine = createMachine<
             () => null,
           )
 
-          const wallets = (await getWallets()).filter(
-            ({ network }) => network === networkId,
-          )
+          const wallets = networkWallets(await getWallets(), networkId)
 
           const selectedWallet = wallets.find(
             ({ address }) => address === lastSelectedWallet?.address,
@@ -262,7 +270,7 @@ export const routerMachine = createMachine<
 
           return {
             wallets: wallets
-              .map(({ address }) => new Wallet(address, networkId))
+              .map(({ address, network }) => new Wallet(address, network))
               .reduce((acc, wallet) => {
                 return {
                   ...acc,
@@ -365,10 +373,12 @@ export const routerMachine = createMachine<
             text: "Deploying...",
           })
 
-          if (event.type === "GENERATE_L1")
+          if (event.type === "GENERATE_L1") {
             await startSession(event.data.password)
+          }
 
-          const newWallet = await Wallet.fromDeploy(ctx.networkId)
+          const network = localNetworkUrl(ctx.networkId, ctx.localhostPort)
+          const newWallet = await Wallet.fromDeploy(network)
 
           return {
             newWallet,
@@ -391,7 +401,10 @@ export const routerMachine = createMachine<
       entry: async (ctx) => {
         sendMessage({
           type: "WALLET_CONNECTED",
-          data: { address: ctx.selectedWallet!, network: ctx.networkId },
+          data: {
+            address: ctx.selectedWallet!,
+            network: localNetworkUrl(ctx.networkId, ctx.localhostPort),
+          },
         })
       },
       on: {
@@ -631,7 +644,19 @@ export const routerMachine = createMachine<
     },
 
     settings: {
-      on: { GO_BACK: "accountList", LOCK: "enterPassword" },
+      on: {
+        GO_BACK: "accountList",
+        LOCK: "enterPassword",
+        CHANGE_PORT: {
+          target: "settings",
+          actions: [
+            assign((ctx, { data }) => {
+              localStorage.setItem("port", `${data}`)
+              return { ...ctx, localhostPort: data }
+            }),
+          ],
+        },
+      },
     },
     submittedTx: {
       type: "final",

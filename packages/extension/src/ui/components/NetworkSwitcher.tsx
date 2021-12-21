@@ -1,7 +1,7 @@
 import { FC } from "react"
 import styled from "styled-components"
 
-import { defaultNetworks, getNetwork } from "../../shared/networks"
+import { getNetwork, networks } from "../../shared/networks"
 import { WalletStatusCode } from "../utils/wallet"
 
 const NetworkName = styled.span`
@@ -99,25 +99,30 @@ export const NetworkStatusIndicator = styled.span<{
 interface NetworkSwitcherProps {
   networkId: string
   onChangeNetwork: (networkId: string) => Promise<void> | void
+  port: number
 }
 
 export const NetworkSwitcher: FC<NetworkSwitcherProps> = ({
   networkId,
   onChangeNetwork,
+  port,
 }) => {
   const currentNetwork = getNetwork(networkId)
-  const otherNetworks = defaultNetworks.filter(({ id }) => id !== networkId)
+  const otherNetworks = networks.filter((network) => network !== currentNetwork)
+
+  const formatName = (name: string) =>
+    name === "Localhost" ? `Localhost ${port}` : name
 
   return (
     <NetworkSwitcherWrapper>
       <Network selected>
-        <NetworkName>{currentNetwork.name}</NetworkName>
+        <NetworkName>{formatName(currentNetwork.name)}</NetworkName>
         <NetworkStatusIndicator status="CONNECTED" />
       </Network>
       <NetworkList>
         {otherNetworks.map(({ id, name }) => (
           <Network key={id} onClick={() => onChangeNetwork(id)}>
-            <NetworkName>{name}</NetworkName>
+            <NetworkName>{formatName(name)}</NetworkName>
             <NetworkStatusIndicator status="CONNECTED" />
           </Network>
         ))}

@@ -153,6 +153,8 @@ function App() {
       <SettingsScreen
         onBack={() => send("GO_BACK")}
         onLock={() => send("LOCK")}
+        port={state.context.localhostPort}
+        onPortChange={(port) => send({ type: "CHANGE_PORT", data: port })}
       />
     )
 
@@ -201,6 +203,7 @@ function App() {
         onChangeNetwork={(networkId) => {
           send({ type: "CHANGE_NETWORK", data: networkId })
         }}
+        port={state.context.localhostPort}
       />
     )
   }
@@ -219,6 +222,7 @@ function App() {
         onChangeNetwork={(networkId) => {
           send({ type: "CHANGE_NETWORK", data: networkId })
         }}
+        port={state.context.localhostPort}
       />
     )
   }
